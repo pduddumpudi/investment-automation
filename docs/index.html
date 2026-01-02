@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investment Ideas Dashboard</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">
+                <i class="fas fa-chart-line"></i> Investment Ideas Dashboard
+            </span>
+            <span class="text-white" id="last-updated">
+                <i class="fas fa-clock"></i> Loading...
+            </span>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <div class="row mb-3">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h3 id="total-stocks" class="text-primary">-</h3>
+                                <p class="text-muted">Total Stocks</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h3 id="dataroma-count" class="text-success">-</h3>
+                                <p class="text-muted">From Dataroma</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h3 id="substack-count" class="text-info">-</h3>
+                                <p class="text-muted">From Substack</p>
+                            </div>
+                            <div class="col-md-3">
+                                <h3 id="both-sources" class="text-warning">-</h3>
+                                <p class="text-muted">From Both Sources</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-table"></i> Investment Ideas
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <table id="stocksTable" class="table table-striped table-hover" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>Ticker</th>
+                                    <th>Company</th>
+                                    <th>PE Ratio</th>
+                                    <th>PB Ratio</th>
+                                    <th>52W High</th>
+                                    <th>52W Low</th>
+                                    <th>PEG</th>
+                                    <th>Insider %</th>
+                                    <th>Sources</th>
+                                    <th>Investors</th>
+                                    <th>Activity</th>
+                                    <th>Thesis</th>
+                                    <th>Link</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-5 py-3 bg-light text-center text-muted">
+        <p>
+            Investment Automation Tool | Data from Dataroma & Substack | Fundamentals from Yahoo Finance
+            <br>
+            <small>Not financial advice. Do your own research.</small>
+        </p>
+    </footer>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- DataTables Buttons -->
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+
+    <!-- Custom JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>

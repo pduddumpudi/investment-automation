@@ -1,0 +1,177 @@
+/* Custom styles for Investment Dashboard */
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f8f9fa;
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0,0,0,.1);
+}
+
+/* Cards */
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-bottom: none;
+    font-weight: 600;
+}
+
+/* DataTable styling */
+#stocksTable {
+    font-size: 0.9rem;
+}
+
+#stocksTable thead th {
+    background-color: #0d6efd;
+    color: white;
+    font-weight: 600;
+    border: none;
+}
+
+#stocksTable tbody tr:hover {
+    background-color: #e9ecef;
+}
+
+/* Ticker column */
+.ticker-cell {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #0d6efd;
+}
+
+/* PE Ratio color coding */
+.pe-low {
+    background-color: #d4edda;
+    color: #155724;
+    font-weight: 600;
+}
+
+.pe-medium {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.pe-high {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Source badges */
+.source-badge {
+    font-size: 0.75rem;
+    margin-right: 0.25rem;
+}
+
+/* Investor list */
+.investor-list {
+    font-size: 0.85rem;
+    max-width: 200px;
+}
+
+/* Activity badges */
+.activity-new {
+    background-color: #28a745 !important;
+}
+
+.activity-increase {
+    background-color: #17a2b8 !important;
+}
+
+.activity-decrease {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+/* Thesis cell */
+.thesis-cell {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: help;
+}
+
+.thesis-cell:hover {
+    white-space: normal;
+    overflow: visible;
+}
+
+/* Links */
+.stock-link {
+    color: #0d6efd;
+    text-decoration: none;
+}
+
+.stock-link:hover {
+    text-decoration: underline;
+}
+
+/* Stats cards */
+.stats-card {
+    transition: transform 0.2s;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Loading spinner */
+.loading-spinner {
+    text-align: center;
+    padding: 50px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #stocksTable {
+        font-size: 0.8rem;
+    }
+
+    .thesis-cell {
+        max-width: 150px;
+    }
+}
+
+/* DataTables buttons */
+.dt-buttons {
+    margin-bottom: 1rem;
+}
+
+.dt-button {
+    margin-right: 0.5rem;
+}
+
+/* Search box */
+.dataTables_filter input {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 0.375rem 0.75rem;
+}
+
+/* Pagination */
+.pagination .page-link {
+    color: #0d6efd;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Footer */
+footer {
+    margin-top: 3rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Tooltip for thesis */
+.tooltip-inner {
+    max-width: 400px;
+    text-align: left;
+}
