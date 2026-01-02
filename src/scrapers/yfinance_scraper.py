@@ -60,6 +60,7 @@ class YFinanceScraper:
                     'sector': info.get('sector'),
                     'industry': info.get('industry'),
                     'country': info.get('country'),
+                    'quote_type': info.get('quoteType', 'EQUITY'),  # EQUITY, ETF, MUTUALFUND, etc.
                 }
 
                 # Convert percentages to readable format

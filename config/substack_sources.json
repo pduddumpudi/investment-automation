@@ -1,0 +1,65 @@
+{
+  "note": "Public investment Substack RSS feeds - no login required",
+  "publications": [
+    {
+      "name": "Yet Another Value Blog",
+      "url": "https://yetanothervalueblog.substack.com",
+      "rss_feed": "https://yetanothervalueblog.substack.com/feed"
+    },
+    {
+      "name": "MicroCapClub",
+      "url": "https://microcapclub.substack.com",
+      "rss_feed": "https://microcapclub.substack.com/feed"
+    },
+    {
+      "name": "Compounding Quality",
+      "url": "https://compoundingquality.substack.com",
+      "rss_feed": "https://compoundingquality.substack.com/feed"
+    },
+    {
+      "name": "Investment Talk",
+      "url": "https://investmenttalk.substack.com",
+      "rss_feed": "https://investmenttalk.substack.com/feed"
+    },
+    {
+      "name": "Value Situations",
+      "url": "https://valuesituations.substack.com",
+      "rss_feed": "https://valuesituations.substack.com/feed"
+    },
+    {
+      "name": "The 10th Man",
+      "url": "https://the10thman.substack.com",
+      "rss_feed": "https://the10thman.substack.com/feed"
+    },
+    {
+      "name": "Deep Value Ideas",
+      "url": "https://deepvalueideas.substack.com",
+      "rss_feed": "https://deepvalueideas.substack.com/feed"
+    },
+    {
+      "name": "Overlooked Alpha",
+      "url": "https://overlookedalpha.substack.com",
+      "rss_feed": "https://overlookedalpha.substack.com/feed"
+    },
+    {
+      "name": "Permanent Equity",
+      "url": "https://www.permanentequity.com",
+      "rss_feed": "https://www.permanentequity.com/feed"
+    },
+    {
+      "name": "The Generalist",
+      "url": "https://www.generalist.com",
+      "rss_feed": "https://www.readthegeneralist.com/feed"
+    },
+    {
+      "name": "Net Interest",
+      "url": "https://www.netinterest.co",
+      "rss_feed": "https://www.netinterest.co/feed"
+    },
+    {
+      "name": "Kingswell",
+      "url": "https://kingswell.substack.com",
+      "rss_feed": "https://kingswell.substack.com/feed"
+    }
+  ]
+}

@@ -12,8 +12,21 @@ logger = setup_logger(__name__)
 class DataMerger:
     """Merge investment data from multiple sources."""
 
+    # Known ETFs that superinvestors hold
+    KNOWN_ETFS = {
+        'SPY', 'QQQ', 'IWM', 'DIA', 'VOO', 'VTI', 'VEA', 'VWO', 'EFA', 'EEM',
+        'GLD', 'SLV', 'TLT', 'IEF', 'LQD', 'HYG', 'XLF', 'XLK', 'XLE', 'XLV',
+        'XLI', 'XLY', 'XLP', 'XLB', 'XLU', 'XLRE', 'XLC', 'VIG', 'VYM', 'SCHD',
+        'ARKK', 'ARKG', 'ARKF', 'ARKW', 'ARKQ', 'IVV', 'IEFA', 'AGG', 'BND',
+        'VNQ', 'VNQI', 'VGT', 'VHT', 'VFH', 'VDC', 'VIS', 'VAW', 'VDE', 'VPU'
+    }
+
     def __init__(self):
         self.stocks = {}
+
+    def _get_known_etfs(self):
+        """Return set of known ETF tickers."""
+        return self.KNOWN_ETFS
 
     def add_dataroma_data(self, holdings: List[Dict]) -> None:
         """
@@ -148,8 +161,18 @@ class DataMerger:
                 'country': data.get('country'),
             })
 
-            # Add StockAnalysis link
-            self.stocks[ticker]['stockanalysis_link'] = f"https://stockanalysis.com/stocks/{ticker.lower()}/"
+            # Add StockAnalysis link (ETFs use /etf/, stocks use /stocks/)
+            # Check if it's an ETF based on certain indicators
+            sector = data.get('sector', '')
+            quote_type = data.get('quote_type', 'stock')
+
+            if quote_type == 'ETF' or sector == '' or ticker in self._get_known_etfs():
+                # Try ETF path first for securities without sector
+                self.stocks[ticker]['stockanalysis_link'] = f"https://stockanalysis.com/etf/{ticker.lower()}/"
+                self.stocks[ticker]['is_etf'] = True
+            else:
+                self.stocks[ticker]['stockanalysis_link'] = f"https://stockanalysis.com/stocks/{ticker.lower()}/"
+                self.stocks[ticker]['is_etf'] = False
 
     def get_merged_data(self) -> Dict:
         """
