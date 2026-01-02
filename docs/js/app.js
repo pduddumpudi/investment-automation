@@ -9,7 +9,7 @@ $(document).ready(function() {
 
 function loadStockData() {
     $.ajax({
-        url: '../data/stocks.json',
+        url: 'data/stocks.json',
         dataType: 'json',
         success: function(data) {
             console.log('Loaded data:', data);
