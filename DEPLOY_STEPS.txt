@@ -1,0 +1,76 @@
+========================================
+DEPLOY YOUR INVESTMENT TOOL - 3 STEPS
+========================================
+
+Your code is ready and committed! Just need to push to GitHub.
+
+===========================================
+STEP 1: Create GitHub Repository (1 minute)
+===========================================
+
+1. Open: https://github.com/new
+
+2. Fill in:
+   - Repository name: investment-automation
+   - Description: Automated investment research tool
+   - Select: PUBLIC (required for free GitHub Pages)
+   - Do NOT check any initialization boxes
+
+3. Click "Create repository"
+
+
+================================================
+STEP 2: Push Your Code (30 seconds)
+================================================
+
+Run these commands in your terminal:
+
+cd "C:\Users\Prasad Duddumpudi\Desktop\AI Projects\investment-automation"
+
+git remote add origin https://github.com/prasadduddumpudi/investment-automation.git
+
+git push -u origin master
+
+
+===========================================
+STEP 3: Enable GitHub Pages (1 minute)
+===========================================
+
+1. On GitHub, go to Settings → Pages
+
+2. Set:
+   - Source: Deploy from a branch
+   - Branch: master
+   - Folder: /docs
+   - Click Save
+
+3. Go to Settings → Actions → General
+
+4. Set:
+   - Workflow permissions: Read and write permissions
+   - Click Save
+
+
+================================================
+STEP 4: Run First Update (Optional - 1 minute)
+================================================
+
+1. Go to Actions tab
+
+2. Click "Daily Investment Data Update"
+
+3. Click "Run workflow" → "Run workflow"
+
+4. Wait 3-4 minutes
+
+5. Visit: https://prasadduddumpudi.github.io/investment-automation/
+
+
+===========================================
+DONE! Your dashboard is live!
+===========================================
+
+It will update automatically every day at 10 AM UTC.
+
+Optional: Add OpenAI API key in Settings → Secrets → Actions
+for better ticker extraction.
