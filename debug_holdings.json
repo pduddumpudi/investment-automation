@@ -1,0 +1,47 @@
+[
+  {
+    "ticker": "AAPL",
+    "ticker_raw": "AAPL",
+    "company_name": "Apple Inc.",
+    "investor": "Warren Buffett",
+    "portfolio_percentage": "22.69",
+    "activity": "Decreased position",
+    "source_url": "https://www.dataroma.com/m/holdings.php?m=BRK"
+  },
+  {
+    "ticker": "AXP",
+    "ticker_raw": "AXP",
+    "company_name": "American Express",
+    "investor": "Warren Buffett",
+    "portfolio_percentage": "18.84",
+    "activity": "Hold",
+    "source_url": "https://www.dataroma.com/m/holdings.php?m=BRK"
+  },
+  {
+    "ticker": "BAC",
+    "ticker_raw": "BAC",
+    "company_name": "Bank of America Corp.",
+    "investor": "Warren Buffett",
+    "portfolio_percentage": "10.96",
+    "activity": "Decreased position",
+    "source_url": "https://www.dataroma.com/m/holdings.php?m=BRK"
+  },
+  {
+    "ticker": "KO",
+    "ticker_raw": "KO",
+    "company_name": "Coca Cola Co.",
+    "investor": "Warren Buffett",
+    "portfolio_percentage": "9.92",
+    "activity": "Hold",
+    "source_url": "https://www.dataroma.com/m/holdings.php?m=BRK"
+  },
+  {
+    "ticker": "CVX",
+    "ticker_raw": "CVX",
+    "company_name": "Chevron Corp.",
+    "investor": "Warren Buffett",
+    "portfolio_percentage": "7.09",
+    "activity": "Hold",
+    "source_url": "https://www.dataroma.com/m/holdings.php?m=BRK"
+  }
+]

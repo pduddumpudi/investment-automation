@@ -1,0 +1,30 @@
+Column 0:
+  Text: '≡'
+  Link 0 href: /m/hist/hist.php?f=BRK&s=AAPL
+  Link 0 text: '≡'
+Column 1:
+  Text: 'AAPL- Apple Inc.'
+  Link 0 href: /m/stock.php?sym=AAPL
+  Link 0 text: 'AAPL- Apple Inc.'
+Column 2:
+  Text: '22.69'
+Column 3:
+  Text: 'Reduce 14.92%'
+Column 4:
+  Text: '238,212,764'
+==================================================
+Column 0:
+  Text: '≡'
+  Link 0 href: /m/hist/hist.php?f=BRK&s=AXP
+  Link 0 text: '≡'
+Column 1:
+  Text: 'AXP- American Express'
+  Link 0 href: /m/stock.php?sym=AXP
+  Link 0 text: 'AXP- American Express'
+Column 2:
+  Text: '18.84'
+Column 3:
+  Text: ''
+Column 4:
+  Text: '151,610,700'
+==================================================
