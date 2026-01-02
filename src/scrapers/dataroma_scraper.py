@@ -202,15 +202,39 @@ class DataromaScraper:
                     continue
 
                 try:
-                    # Extract data from columns
-                    stock_link = cols[0].find('a')
+                    # Column structure:
+                    # 0: History link (hamburger icon)
+                    # 1: Stock link with "TICKER- Company Name" and href /m/stock.php?sym=TICKER
+                    # 2: Portfolio percentage
+                    # 3: Recent activity
+                    # 4: Shares
+
+                    # Get the stock link from column 1 (not column 0 which is history)
+                    stock_link = cols[1].find('a')
                     if not stock_link:
                         continue
 
-                    ticker_raw = stock_link.get_text(strip=True)
+                    # The ticker is in the URL parameter: /m/stock.php?sym=AAPL
+                    href = stock_link.get('href', '')
+                    if 'sym=' in href:
+                        ticker_raw = href.split('sym=')[-1].split('&')[0]
+                    else:
+                        # Fallback: try to extract from link text (e.g., "AAPL- Apple Inc.")
+                        link_text = stock_link.get_text(strip=True)
+                        if '- ' in link_text:
+                            ticker_raw = link_text.split('- ')[0].strip()
+                        else:
+                            ticker_raw = link_text
+
                     ticker = self.normalize_ticker(ticker_raw)
 
-                    company_name = cols[1].get_text(strip=True)
+                    # Company name is after the dash in the link text
+                    link_text = stock_link.get_text(strip=True)
+                    if '- ' in link_text:
+                        company_name = link_text.split('- ', 1)[1].strip()
+                    else:
+                        company_name = ticker
+
                     portfolio_pct = cols[2].get_text(strip=True).replace('%', '')
 
                     # Get activity (buy/sell/hold)
