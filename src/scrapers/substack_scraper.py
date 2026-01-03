@@ -6,8 +6,12 @@ import time
 import json
 import os
 from typing import List, Dict, Optional
-from src.processors.ticker_extractor import TickerExtractor
-from src.utils.logger import setup_logger
+try:
+    from src.processors.ticker_extractor import TickerExtractor
+    from src.utils.logger import setup_logger
+except ModuleNotFoundError:
+    from processors.ticker_extractor import TickerExtractor
+    from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 

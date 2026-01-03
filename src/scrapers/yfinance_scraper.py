@@ -1,16 +1,35 @@
 """
-Fetch stock fundamentals using yfinance API with retry logic and rate limiting.
+Fetch comprehensive stock fundamentals using yfinance API with retry logic and rate limiting.
+Includes core fields fetched upfront and extended fields for lazy loading.
 """
 import yfinance as yf
 import time
-from typing import Dict, List, Optional
-from src.utils.logger import setup_logger
+from typing import Dict, List, Optional, Set
+try:
+    from src.utils.logger import setup_logger
+except ModuleNotFoundError:
+    from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
 
+# International ticker format variations to try
+INTERNATIONAL_FORMATS = {
+    'KS': ['.KS', '.KQ'],  # Korean (KOSPI, KOSDAQ)
+    'HK': ['.HK'],  # Hong Kong
+    'T': ['.T'],  # Tokyo
+    'L': ['.L'],  # London
+    'DE': ['.DE'],  # Germany
+    'PA': ['.PA'],  # Paris
+    'AS': ['.AS'],  # Amsterdam
+    'SW': ['.SW'],  # Swiss
+    'TO': ['.TO'],  # Toronto
+    'AX': ['.AX'],  # Australia
+}
+
+
 class YFinanceScraper:
-    """Fetch stock fundamentals from Yahoo Finance."""
+    """Fetch comprehensive stock fundamentals from Yahoo Finance."""
 
     def __init__(self, rate_limit_delay: float = 0.5):
         """
@@ -21,13 +40,51 @@ class YFinanceScraper:
         """
         self.rate_limit_delay = rate_limit_delay
 
-    def get_fundamentals(self, ticker: str, max_retries: int = 3) -> Optional[Dict]:
+    def _try_ticker_formats(self, ticker: str) -> Optional[yf.Ticker]:
+        """
+        Try different ticker formats for international stocks.
+
+        Args:
+            ticker: Original ticker symbol
+
+        Returns:
+            yf.Ticker object if found, None otherwise
+        """
+        # First try the ticker as-is
+        stock = yf.Ticker(ticker)
+        info = stock.info
+
+        if info and 'symbol' in info and info.get('regularMarketPrice'):
+            return stock
+
+        # If it looks like an international ticker, try variations
+        if any(char.isdigit() for char in ticker[:4]):
+            # Likely international (e.g., 003550, 0019)
+            base_ticker = ticker.split('.')[0].split('-')[0]
+
+            for suffix_list in INTERNATIONAL_FORMATS.values():
+                for suffix in suffix_list:
+                    try_ticker = f"{base_ticker}{suffix}"
+                    logger.debug(f"Trying format: {try_ticker}")
+                    try:
+                        stock = yf.Ticker(try_ticker)
+                        info = stock.info
+                        if info and 'symbol' in info and info.get('regularMarketPrice'):
+                            logger.info(f"Found {ticker} as {try_ticker}")
+                            return stock
+                    except Exception:
+                        continue
+
+        return None
+
+    def get_fundamentals(self, ticker: str, max_retries: int = 3, extended: bool = False) -> Optional[Dict]:
         """
         Get fundamental data for a stock ticker with retry logic.
 
         Args:
             ticker: Stock ticker symbol
             max_retries: Maximum number of retry attempts
+            extended: If True, fetch all extended fields (slower)
 
         Returns:
             Dictionary with fundamental data or None if failed
@@ -41,9 +98,15 @@ class YFinanceScraper:
 
                 # Check if we got valid data
                 if not info or 'symbol' not in info:
-                    logger.warning(f"No data found for {ticker}")
-                    return None
+                    # Try international formats
+                    stock = self._try_ticker_formats(ticker)
+                    if stock:
+                        info = stock.info
+                    else:
+                        logger.warning(f"No data found for {ticker}")
+                        return None
 
+                # Core fields (always fetched)
                 fundamentals = {
                     'ticker': ticker,
                     'company_name': info.get('longName') or info.get('shortName') or ticker,
@@ -57,22 +120,90 @@ class YFinanceScraper:
                     'institutional_pct': info.get('heldPercentInstitutions'),
                     'market_cap': info.get('marketCap'),
                     'current_price': info.get('currentPrice') or info.get('regularMarketPrice'),
+                    'previous_close': info.get('previousClose') or info.get('regularMarketPreviousClose'),
                     'sector': info.get('sector'),
                     'industry': info.get('industry'),
                     'country': info.get('country'),
-                    'quote_type': info.get('quoteType', 'EQUITY'),  # EQUITY, ETF, MUTUALFUND, etc.
+                    'quote_type': info.get('quoteType', 'EQUITY'),
+                    'currency': info.get('currency'),
+                    'exchange': info.get('exchange'),
                 }
 
-                # Convert percentages to readable format
-                if fundamentals['insider_pct']:
-                    fundamentals['insider_pct'] = round(fundamentals['insider_pct'] * 100, 2)
-                if fundamentals['institutional_pct']:
-                    fundamentals['institutional_pct'] = round(fundamentals['institutional_pct'] * 100, 2)
+                # Extended valuation fields
+                if extended:
+                    fundamentals.update({
+                        # Valuation
+                        'ev_to_ebitda': info.get('enterpriseToEbitda'),
+                        'ev_to_revenue': info.get('enterpriseToRevenue'),
+                        'price_to_sales': info.get('priceToSalesTrailing12Months'),
+                        'price_to_fcf': self._calculate_price_to_fcf(info),
+                        'enterprise_value': info.get('enterpriseValue'),
 
-                # Log any missing fields
-                missing_fields = [k for k, v in fundamentals.items() if v is None]
+                        # Quality metrics
+                        'roe': info.get('returnOnEquity'),
+                        'roa': info.get('returnOnAssets'),
+                        'gross_margin': info.get('grossMargins'),
+                        'operating_margin': info.get('operatingMargins'),
+                        'net_margin': info.get('profitMargins'),
+                        'debt_to_equity': info.get('debtToEquity'),
+                        'current_ratio': info.get('currentRatio'),
+                        'quick_ratio': info.get('quickRatio'),
+
+                        # Income metrics
+                        'dividend_yield': info.get('dividendYield'),
+                        'dividend_rate': info.get('dividendRate'),
+                        'payout_ratio': info.get('payoutRatio'),
+                        'ex_dividend_date': info.get('exDividendDate'),
+                        'eps_ttm': info.get('trailingEps'),
+                        'eps_forward': info.get('forwardEps'),
+
+                        # Risk metrics
+                        'beta': info.get('beta'),
+                        'short_ratio': info.get('shortRatio'),
+                        'short_pct_float': info.get('shortPercentOfFloat'),
+
+                        # Additional
+                        'revenue': info.get('totalRevenue'),
+                        'revenue_growth': info.get('revenueGrowth'),
+                        'earnings_growth': info.get('earningsGrowth'),
+                        'free_cash_flow': info.get('freeCashflow'),
+                        'operating_cash_flow': info.get('operatingCashflow'),
+                        'total_debt': info.get('totalDebt'),
+                        'total_cash': info.get('totalCash'),
+                        'book_value': info.get('bookValue'),
+                        'shares_outstanding': info.get('sharesOutstanding'),
+                        'float_shares': info.get('floatShares'),
+                        'avg_volume': info.get('averageVolume'),
+                        'avg_volume_10d': info.get('averageVolume10days'),
+                        'fifty_day_avg': info.get('fiftyDayAverage'),
+                        'two_hundred_day_avg': info.get('twoHundredDayAverage'),
+                    })
+
+                # Convert percentages to readable format (0-100 scale)
+                pct_fields = ['insider_pct', 'institutional_pct', 'roe', 'roa',
+                              'gross_margin', 'operating_margin', 'net_margin',
+                              'dividend_yield', 'payout_ratio', 'short_pct_float',
+                              'revenue_growth', 'earnings_growth']
+
+                for field in pct_fields:
+                    if field in fundamentals and fundamentals[field] is not None:
+                        # yfinance returns some as decimals (0.15) and some as percentages (15)
+                        value = fundamentals[field]
+                        if isinstance(value, (int, float)):
+                            if abs(value) < 1:  # Likely a decimal
+                                fundamentals[field] = round(value * 100, 2)
+                            else:
+                                fundamentals[field] = round(value, 2)
+
+                # Flag as international if non-USD
+                currency = fundamentals.get('currency', 'USD')
+                fundamentals['is_international'] = currency != 'USD'
+
+                # Log any missing core fields
+                core_fields = ['pe_ratio', 'pb_ratio', 'market_cap', 'current_price']
+                missing_fields = [k for k in core_fields if fundamentals.get(k) is None]
                 if missing_fields:
-                    logger.debug(f"{ticker} missing fields: {missing_fields}")
+                    logger.debug(f"{ticker} missing core fields: {missing_fields}")
 
                 logger.info(f"Successfully fetched data for {ticker}")
                 time.sleep(self.rate_limit_delay)
@@ -82,7 +213,6 @@ class YFinanceScraper:
                 logger.warning(f"Attempt {attempt + 1} failed for {ticker}: {e}")
 
                 if attempt < max_retries - 1:
-                    # Exponential backoff
                     wait_time = (2 ** attempt) * self.rate_limit_delay
                     logger.info(f"Retrying in {wait_time}s...")
                     time.sleep(wait_time)
@@ -92,12 +222,22 @@ class YFinanceScraper:
 
         return None
 
-    def get_fundamentals_batch(self, tickers: List[str]) -> Dict[str, Dict]:
+    def _calculate_price_to_fcf(self, info: Dict) -> Optional[float]:
+        """Calculate Price to Free Cash Flow ratio."""
+        market_cap = info.get('marketCap')
+        fcf = info.get('freeCashflow')
+
+        if market_cap and fcf and fcf != 0:
+            return round(market_cap / fcf, 2)
+        return None
+
+    def get_fundamentals_batch(self, tickers: List[str], extended: bool = False) -> Dict[str, Dict]:
         """
         Fetch fundamentals for multiple tickers.
 
         Args:
             tickers: List of ticker symbols
+            extended: If True, fetch all extended fields
 
         Returns:
             Dictionary mapping ticker to fundamentals data
@@ -105,12 +245,12 @@ class YFinanceScraper:
         results = {}
         total = len(tickers)
 
-        logger.info(f"Fetching fundamentals for {total} tickers...")
+        logger.info(f"Fetching fundamentals for {total} tickers (extended={extended})...")
 
         for i, ticker in enumerate(tickers, 1):
             logger.info(f"Progress: {i}/{total} - {ticker}")
 
-            data = self.get_fundamentals(ticker)
+            data = self.get_fundamentals(ticker, extended=extended)
             if data:
                 results[ticker] = data
             else:
@@ -121,10 +261,23 @@ class YFinanceScraper:
                     'error': 'Failed to fetch data'
                 }
 
-        success_rate = (len([r for r in results.values() if 'error' not in r]) / total * 100) if total > 0 else 0
-        logger.info(f"Completed: {len(results)}/{total} tickers ({success_rate:.1f}% success rate)")
+        success_count = len([r for r in results.values() if 'error' not in r])
+        success_rate = (success_count / total * 100) if total > 0 else 0
+        logger.info(f"Completed: {success_count}/{total} tickers ({success_rate:.1f}% success rate)")
 
         return results
+
+    def get_extended_fundamentals(self, ticker: str) -> Optional[Dict]:
+        """
+        Fetch extended fundamentals for a single ticker (for lazy loading).
+
+        Args:
+            ticker: Stock ticker symbol
+
+        Returns:
+            Dictionary with extended fundamental data
+        """
+        return self.get_fundamentals(ticker, extended=True)
 
     def format_for_display(self, fundamentals: Dict) -> Dict:
         """
@@ -140,24 +293,44 @@ class YFinanceScraper:
         for key, value in fundamentals.items():
             if value is None:
                 formatted[key] = 'N/A'
-            elif isinstance(value, float) and key != 'insider_pct' and key != 'institutional_pct':
+            elif isinstance(value, float):
                 # Round floats to 2 decimal places
-                formatted[key] = round(value, 2)
+                if key in ['market_cap', 'enterprise_value', 'revenue', 'free_cash_flow',
+                           'operating_cash_flow', 'total_debt', 'total_cash']:
+                    # Large numbers - format with commas
+                    formatted[key] = value
+                else:
+                    formatted[key] = round(value, 2)
             else:
                 formatted[key] = value
 
         return formatted
 
 
-def fetch_fundamentals(tickers: List[str]) -> Dict[str, Dict]:
+def fetch_fundamentals(tickers: List[str], extended: bool = False) -> Dict[str, Dict]:
     """
     Convenience function to fetch fundamentals for multiple tickers.
 
     Args:
         tickers: List of ticker symbols
+        extended: If True, fetch all extended fields
 
     Returns:
         Dictionary mapping ticker to fundamentals
     """
     scraper = YFinanceScraper(rate_limit_delay=0.5)
-    return scraper.get_fundamentals_batch(tickers)
+    return scraper.get_fundamentals_batch(tickers, extended=extended)
+
+
+def fetch_single_extended(ticker: str) -> Optional[Dict]:
+    """
+    Fetch extended fundamentals for a single ticker (for API/lazy loading).
+
+    Args:
+        ticker: Stock ticker symbol
+
+    Returns:
+        Dictionary with extended fundamentals or None
+    """
+    scraper = YFinanceScraper(rate_limit_delay=0.1)
+    return scraper.get_extended_fundamentals(ticker)

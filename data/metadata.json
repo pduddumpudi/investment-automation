@@ -1,6 +1,7 @@
 {
-  "last_updated": "2026-01-02T21:45:12.218182Z",
-  "total_stocks": 852,
-  "dataroma_tickers": 840,
-  "substack_tickers": 23
+  "last_updated": "2026-01-03T14:32:16.294163Z",
+  "total_stocks": 1168,
+  "dataroma_stocks": 1158,
+  "substack_stocks": 23,
+  "both_sources": 13
 }

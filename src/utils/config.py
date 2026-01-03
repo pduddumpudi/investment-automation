@@ -16,6 +16,7 @@ class Config:
 
     def __init__(self):
         self.base_dir = Path(__file__).parent.parent.parent
+        self.project_root = self.base_dir  # Alias for base_dir
         self.config_dir = self.base_dir / 'config'
         self.data_dir = self.base_dir / 'data'
         self.docs_dir = self.base_dir / 'docs'

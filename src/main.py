@@ -2,7 +2,7 @@
 Main orchestration script for the investment automation tool.
 
 This script:
-1. Scrapes Dataroma for investor holdings
+1. Scrapes Dataroma for investor holdings (dynamic discovery)
 2. Scrapes Substack for investment ideas
 3. Fetches fundamentals from yfinance
 4. Merges all data and saves to JSON/CSV
@@ -11,12 +11,13 @@ import json
 import pandas as pd
 from pathlib import Path
 import sys
+import argparse
 from typing import Dict, List
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-from scrapers.dataroma_scraper import scrape_dataroma
+from scrapers.dataroma_scraper import scrape_dataroma, DataromaScraper
 from scrapers.substack_scraper import scrape_substack
 from scrapers.yfinance_scraper import fetch_fundamentals
 from processors.data_merger import merge_all_data
@@ -35,25 +36,52 @@ def save_results(merged_data: Dict, data_dir: Path) -> None:
         merged_data: Merged dataset dictionary
         data_dir: Directory to save data files
     """
+    # Ensure directory exists
+    data_dir.mkdir(parents=True, exist_ok=True)
+
     # Save JSON
     json_path = data_dir / 'stocks.json'
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(merged_data, f, indent=2, ensure_ascii=False)
     logger.info(f"Saved JSON to {json_path}")
 
-    # Save CSV
+    # Save CSV (flattened)
     if merged_data.get('stocks'):
-        df = pd.json_normalize(merged_data['stocks'])
+        # Flatten for CSV export
+        flat_stocks = []
+        for stock in merged_data['stocks']:
+            flat_entry = {
+                'ticker': stock['ticker'],
+                'company_name': stock['company_name'],
+                'sources': ', '.join(stock.get('sources', [])),
+                'investor_count': stock.get('investor_count', 0),
+                'aggregate_activity': stock.get('aggregate_activity', 'Hold'),
+            }
+
+            # Add fundamentals
+            fundamentals = stock.get('fundamentals', {})
+            for key, value in fundamentals.items():
+                flat_entry[f'fundamentals_{key}'] = value
+
+            # Add investors as comma-separated
+            investors = stock.get('dataroma_data', {}).get('investors', [])
+            flat_entry['investors'] = ', '.join([inv['name'] for inv in investors])
+
+            flat_stocks.append(flat_entry)
+
+        df = pd.DataFrame(flat_stocks)
         csv_path = data_dir / 'stocks.csv'
         df.to_csv(csv_path, index=False, encoding='utf-8')
         logger.info(f"Saved CSV to {csv_path}")
 
     # Save metadata
+    stats = merged_data.get('stats', {})
     metadata = {
         'last_updated': merged_data['last_updated'],
         'total_stocks': merged_data['total_stocks'],
-        'dataroma_tickers': len([s for s in merged_data['stocks'] if 'Dataroma' in s.get('sources', [])]),
-        'substack_tickers': len([s for s in merged_data['stocks'] if 'Substack' in s.get('sources', [])]),
+        'dataroma_stocks': stats.get('dataroma_stocks', 0),
+        'substack_stocks': stats.get('substack_stocks', 0),
+        'both_sources': stats.get('both_sources', 0),
     }
     metadata_path = data_dir / 'metadata.json'
     with open(metadata_path, 'w', encoding='utf-8') as f:
@@ -79,27 +107,34 @@ def load_previous_data(data_dir: Path) -> Dict:
         except Exception as e:
             logger.error(f"Failed to load previous data: {e}")
 
-    return {'last_updated': '', 'total_stocks': 0, 'stocks': []}
+    return {'last_updated': '', 'total_stocks': 0, 'stocks': [], 'stats': {}}
 
 
 def main():
     """Main execution function."""
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description='Investment Automation Tool')
+    parser.add_argument('--force', '-f', action='store_true',
+                        help='Force full scrape of all investors (ignore incremental)')
+    args = parser.parse_args()
+
     logger.info("=" * 80)
     logger.info("INVESTMENT AUTOMATION TOOL - STARTING")
     logger.info("=" * 80)
 
     try:
-        # Step 1: Scrape Dataroma
-        logger.info("\n[1/5] Scraping Dataroma...")
-        investors = config.get_dataroma_investors()
-        logger.info(f"Tracking {len(investors)} investors: {investors}")
-
+        # Step 1: Scrape Dataroma (dynamic discovery)
+        logger.info("\n[1/5] Scraping Dataroma (dynamic investor discovery)...")
         dataroma_holdings = []
+        discovered_investors = []
         try:
-            dataroma_holdings = scrape_dataroma(investors)
-            logger.info(f"✓ Scraped {len(dataroma_holdings)} holdings from Dataroma")
+            scraper = DataromaScraper(force_full_scrape=args.force)
+            dataroma_holdings = scraper.scrape_all_investors()
+            discovered_investors = scraper.get_discovered_investors()
+            logger.info(f"Discovered {len(discovered_investors)} investors on Dataroma")
+            logger.info(f"Scraped {len(dataroma_holdings)} holdings from Dataroma")
         except Exception as e:
-            logger.error(f"✗ Dataroma scraping failed: {e}")
+            logger.error(f"Dataroma scraping failed: {e}")
 
         # Step 2: Scrape Substack
         logger.info("\n[2/5] Scraping Substack...")
@@ -114,9 +149,9 @@ def main():
                 logger.info("OPENAI_API_KEY not set. Using regex for ticker extraction.")
 
             substack_articles = scrape_substack(use_llm=use_llm)
-            logger.info(f"✓ Scraped {len(substack_articles)} articles from Substack")
+            logger.info(f"Scraped {len(substack_articles)} articles from Substack")
         except Exception as e:
-            logger.error(f"✗ Substack scraping failed: {e}")
+            logger.error(f"Substack scraping failed: {e}")
 
         # Step 3: Collect unique tickers
         logger.info("\n[3/5] Collecting unique tickers...")
@@ -136,7 +171,7 @@ def main():
 
         # Deduplicate
         unique_tickers = deduplicate_tickers(all_tickers)
-        logger.info(f"✓ Total unique tickers: {len(unique_tickers)}")
+        logger.info(f"Total unique tickers: {len(unique_tickers)}")
 
         if not unique_tickers:
             logger.warning("No tickers found! Using previous data if available.")
@@ -149,9 +184,10 @@ def main():
         fundamentals = {}
         try:
             fundamentals = fetch_fundamentals(unique_tickers)
-            logger.info(f"✓ Fetched fundamentals for {len(fundamentals)} tickers")
+            success_count = len([f for f in fundamentals.values() if 'error' not in f])
+            logger.info(f"Fetched fundamentals for {success_count}/{len(unique_tickers)} tickers")
         except Exception as e:
-            logger.error(f"✗ yfinance fetching failed: {e}")
+            logger.error(f"yfinance fetching failed: {e}")
 
         # Step 5: Merge all data
         logger.info("\n[5/5] Merging all data...")
@@ -160,11 +196,26 @@ def main():
             substack_articles=substack_articles,
             fundamentals=fundamentals
         )
-        logger.info(f"✓ Merged data ready: {merged_data['total_stocks']} stocks")
+        logger.info(f"Merged data ready: {merged_data['total_stocks']} stocks")
+
+        # Log statistics
+        stats = merged_data.get('stats', {})
+        logger.info(f"  - From Dataroma: {stats.get('dataroma_stocks', 0)}")
+        logger.info(f"  - From Substack: {stats.get('substack_stocks', 0)}")
+        logger.info(f"  - From Both: {stats.get('both_sources', 0)}")
 
         # Save results
         logger.info("\nSaving results...")
         save_results(merged_data, config.data_dir)
+
+        # Copy to docs folder for GitHub Pages
+        docs_data_dir = config.docs_dir / 'data'
+        docs_data_dir.mkdir(parents=True, exist_ok=True)
+
+        # Copy JSON to docs
+        import shutil
+        shutil.copy(config.data_dir / 'stocks.json', docs_data_dir / 'stocks.json')
+        logger.info(f"Copied stocks.json to {docs_data_dir}")
 
         logger.info("\n" + "=" * 80)
         logger.info("SUCCESS! Data pipeline completed")
@@ -172,6 +223,7 @@ def main():
         logger.info(f"  - {config.data_dir / 'stocks.json'}")
         logger.info(f"  - {config.data_dir / 'stocks.csv'}")
         logger.info(f"  - {config.data_dir / 'metadata.json'}")
+        logger.info(f"  - {docs_data_dir / 'stocks.json'}")
         logger.info("=" * 80)
 
     except KeyboardInterrupt:

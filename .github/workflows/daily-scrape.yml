@@ -2,9 +2,16 @@ name: Daily Investment Data Update
 
 on:
   schedule:
-    # Run daily at 10 AM UTC (adjust as needed)
+    # Normal days: 10 AM UTC
     - cron: '0 10 * * *'
+    # 13F filing periods (Feb, May, Aug, Nov 1-20): Also run at 6 PM UTC
+    - cron: '0 18 1-20 2,5,8,11 *'
   workflow_dispatch:  # Allow manual trigger
+    inputs:
+      force_scrape:
+        description: 'Force full scrape (ignore incremental)'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -25,20 +32,31 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Install dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: docs-src/package-lock.json
+
+      - name: Install Python dependencies
         run: |
           pip install -r requirements.txt
 
-      - name: Install Playwright browsers
+      - name: Install Node dependencies
         run: |
-          playwright install chromium
-          playwright install-deps chromium
+          cd docs-src
+          npm ci
 
       - name: Run scraper
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python src/main.py
+          if [ "${{ github.event.inputs.force_scrape }}" == "true" ]; then
+            python src/main.py --force
+          else
+            python src/main.py
+          fi
         continue-on-error: true
 
       - name: Copy data to docs folder
@@ -47,10 +65,15 @@ jobs:
           cp data/stocks.json docs/data/
           cp data/stocks.csv docs/data/ 2>/dev/null || true
 
+      - name: Build React frontend
+        run: |
+          cd docs-src
+          npm run build
+
       - name: Check if data was updated
         id: check_changes
         run: |
-          if git diff --quiet data/ docs/data/; then
+          if git diff --quiet data/ docs/; then
             echo "changed=false" >> $GITHUB_OUTPUT
           else
             echo "changed=true" >> $GITHUB_OUTPUT
@@ -61,8 +84,10 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions Bot'
           git config --global user.email 'actions@github.com'
-          git add data/ docs/data/
-          git commit -m "Update investment data - $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git add data/ docs/
+          git commit -m "Update investment data - $(date -u +'%Y-%m-%d %H:%M UTC')
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)"
           git push
 
       - name: Deploy to GitHub Pages

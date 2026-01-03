@@ -4,7 +4,10 @@ Extract stock tickers from text using LLM (preferred) or regex (fallback).
 import re
 import os
 from typing import List, Set
-from src.utils.logger import setup_logger
+try:
+    from src.utils.logger import setup_logger
+except ModuleNotFoundError:
+    from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 

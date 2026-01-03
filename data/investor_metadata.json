@@ -1,0 +1,300 @@
+{
+  "investors": {
+    "SEQUX": {
+      "name": "Ruane Cunniff",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:04.644606"
+    },
+    "LLPFX": {
+      "name": "Mason Hawkins",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:08.777451"
+    },
+    "oaklx": {
+      "name": "Bill Nygren",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:12.899225"
+    },
+    "ARFFX": {
+      "name": "Charles Bobrinskoy",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:17.031341"
+    },
+    "CAAPX": {
+      "name": "John Rogers",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:21.160771"
+    },
+    "GC": {
+      "name": "Francois Rochon",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:25.297172"
+    },
+    "MP": {
+      "name": "Tom Bancroft",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:29.423067"
+    },
+    "mc": {
+      "name": "Lee Ainslie",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:33.777873"
+    },
+    "tp": {
+      "name": "Daniel Loeb",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:37.917111"
+    },
+    "TF": {
+      "name": "Nelson Peltz",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:42.055063"
+    },
+    "PC": {
+      "name": "Norbert Lou",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:46.179019"
+    },
+    "WP": {
+      "name": "David Rolfe",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:50.349749"
+    },
+    "GLRE": {
+      "name": "David Einhorn",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:54.481592"
+    },
+    "fairx": {
+      "name": "Bruce Berkowitz",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:14:58.606233"
+    },
+    "CCM": {
+      "name": "Glenn Greenberg",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:02.851218"
+    },
+    "psc": {
+      "name": "Bill Ackman",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:06.970217"
+    },
+    "LPC": {
+      "name": "Stephen Mandel",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:11.277192"
+    },
+    "AIM": {
+      "name": "Alex Roepers",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:15.409409"
+    },
+    "ic": {
+      "name": "Carl Icahn",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:19.529684"
+    },
+    "BRK": {
+      "name": "Warren Buffett",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:23.655685"
+    },
+    "SA": {
+      "name": "Christopher Bloomstran",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:27.785366"
+    },
+    "ENG": {
+      "name": "Glenn Welling",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:32.137520"
+    },
+    "TGM": {
+      "name": "Chase Coleman",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:36.284620"
+    },
+    "ca": {
+      "name": "Francis Chou",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:40.421305"
+    },
+    "OCL": {
+      "name": "Bryan Lawrence",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:44.557720"
+    },
+    "CAS": {
+      "name": "Clifford Sosin",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:48.684990"
+    },
+    "LMM": {
+      "name": "Bill Miller",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:52.828062"
+    },
+    "HH": {
+      "name": "Duan Yongping",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:15:56.950799"
+    },
+    "tci": {
+      "name": "Chris Hohn",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:01.203768"
+    },
+    "GLC": {
+      "name": "Josh Tarasoff",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:05.327473"
+    },
+    "DA": {
+      "name": "Pat Dorsey",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:09.447625"
+    },
+    "FS": {
+      "name": "Terry Smith",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:13.623369"
+    },
+    "FFH": {
+      "name": "Prem Watsa",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:17.756962"
+    },
+    "CM": {
+      "name": "Greg Alexander",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:21.867882"
+    },
+    "oc": {
+      "name": "Howard Marks",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:25.999181"
+    },
+    "BAUPOST": {
+      "name": "Seth Klarman",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:30.130005"
+    },
+    "SP": {
+      "name": "Dennis Hong",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:34.313678"
+    },
+    "AC": {
+      "name": "Chuck Akre",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:38.448302"
+    },
+    "AM": {
+      "name": "David Tepper",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:42.601515"
+    },
+    "CAU": {
+      "name": "Sarah Ketterer",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:46.782854"
+    },
+    "PI": {
+      "name": "Mohnish Pabrai",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:50.892472"
+    },
+    "HC": {
+      "name": "Li Lu",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:55.014594"
+    },
+    "GR": {
+      "name": "Thomas Russo",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:16:59.190755"
+    },
+    "EC": {
+      "name": "John Armitage",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:03.442622"
+    },
+    "DAV": {
+      "name": "Christopher Davis",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:07.655159"
+    },
+    "abc": {
+      "name": "David Abrams",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:11.769310"
+    },
+    "SSHFX": {
+      "name": "Harry Burn",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:15.915688"
+    },
+    "SAM": {
+      "name": "Michael Burry",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:20.026693"
+    },
+    "MKL": {
+      "name": "Thomas Gayner",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:24.227889"
+    },
+    "WVALX": {
+      "name": "Wallace Weitz",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:28.389516"
+    },
+    "cc": {
+      "name": "William Von Mueffling",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:32.647202"
+    },
+    "PTNT": {
+      "name": "Samantha McLemore",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:36.802798"
+    },
+    "pzfvx": {
+      "name": "Richard Pzena",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:41.117476"
+    },
+    "RVC": {
+      "name": "Robert Vinall",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:45.239044"
+    },
+    "OFALX": {
+      "name": "Robert Olstein",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:49.438280"
+    },
+    "aq": {
+      "name": "Guy Spier",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:53.578633"
+    },
+    "TWEBX": {
+      "name": "Tweedy Browne Co.",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:17:57.781808"
+    },
+    "MAVFX": {
+      "name": "David Katz",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:18:02.225848"
+    },
+    "FPACX": {
+      "name": "Steven Romick",
+      "last_updated_on_site": null,
+      "last_scraped": "2026-01-03T14:18:06.396686"
+    }
+  },
+  "last_full_scrape": "2026-01-03T14:18:10.407649"
+}
