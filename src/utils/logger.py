@@ -6,6 +6,16 @@ import sys
 from pathlib import Path
 
 
+class SafeStreamHandler(logging.StreamHandler):
+    """StreamHandler that ignores flush errors from closed streams."""
+
+    def flush(self) -> None:
+        try:
+            super().flush()
+        except OSError:
+            pass
+
+
 def setup_logger(name: str, log_file: str = None, level=logging.INFO) -> logging.Logger:
     """
     Set up a logger with console and optional file output.
@@ -26,7 +36,7 @@ def setup_logger(name: str, log_file: str = None, level=logging.INFO) -> logging
         return logger
 
     # Console handler with formatting
-    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler = SafeStreamHandler(sys.stdout)
     console_handler.setLevel(level)
     console_format = logging.Formatter(
         '%(asctime)s - %(name)s - %(levelname)s - %(message)s',

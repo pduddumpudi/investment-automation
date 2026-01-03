@@ -23,7 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from scrapers.dataroma_scraper import scrape_dataroma, DataromaScraper
 from scrapers.substack_scraper import scrape_substack
 from scrapers.yfinance_scraper import fetch_fundamentals
-from processors.data_merger import merge_all_data
+from processors.data_merger import merge_all_data, DataMerger
 from processors.deduplicator import deduplicate_tickers
 from utils.config import config
 from utils.logger import setup_logger
@@ -172,6 +172,99 @@ def get_stale_tickers(failed_data: Dict, max_failures: int = 3) -> Set[str]:
     return stale
 
 
+def update_existing_data_with_fundamentals(existing_data: Dict,
+                                          fundamentals: Dict[str, Dict],
+                                          failed_tickers: Set[str]) -> Dict:
+    """
+    Update existing merged data with fresh fundamentals.
+
+    Args:
+        existing_data: Previously saved merged data
+        fundamentals: Fundamentals from yfinance keyed by ticker
+        failed_tickers: Set of tickers considered stale/failed
+
+    Returns:
+        Updated merged dataset dictionary
+    """
+    stocks = existing_data.get('stocks', [])
+    stocks_by_ticker = {
+        stock.get('ticker', '').upper(): stock
+        for stock in stocks
+        if stock.get('ticker')
+    }
+
+    known_etfs = DataMerger()._get_known_etfs()
+
+    for ticker, data in fundamentals.items():
+        ticker_upper = ticker.upper()
+        stock = stocks_by_ticker.get(ticker_upper)
+        if not stock:
+            continue
+
+        is_stale = ticker_upper in failed_tickers or 'error' in data
+
+        fundamentals_obj = {
+            'pe_ratio': data.get('pe_ratio'),
+            'forward_pe': data.get('forward_pe'),
+            'pb_ratio': data.get('pb_ratio'),
+            'peg_ratio': data.get('peg_ratio'),
+            'week_52_high': data.get('week_52_high'),
+            'week_52_low': data.get('week_52_low'),
+            'pct_above_52w_low': data.get('pct_above_52w_low'),
+            'pct_below_52w_high': data.get('pct_below_52w_high'),
+            'current_price': data.get('current_price'),
+            'previous_close': data.get('previous_close'),
+            'total_cash': data.get('total_cash'),
+            'total_debt': data.get('total_debt'),
+            'long_term_debt': data.get('long_term_debt'),
+            'net_debt': data.get('net_debt'),
+            'market_cap': data.get('market_cap'),
+            'insider_pct': data.get('insider_pct'),
+            'institutional_pct': data.get('institutional_pct'),
+            'sector': data.get('sector'),
+            'industry': data.get('industry'),
+            'country': data.get('country'),
+            'currency': data.get('currency'),
+            'exchange': data.get('exchange'),
+            'is_international': data.get('is_international', False),
+        }
+
+        for key, value in fundamentals_obj.items():
+            if value is None:
+                fundamentals_obj[key] = 'N/A'
+
+        stock['company_name'] = data.get('company_name', stock.get('company_name', ticker_upper))
+        stock['fundamentals'] = fundamentals_obj
+        stock['fundamentals_updated_at'] = datetime.utcnow().isoformat() + 'Z'
+        stock['is_stale'] = is_stale
+
+        quote_type = data.get('quote_type', 'EQUITY')
+        sector = data.get('sector', '')
+
+        if quote_type == 'ETF' or sector == '' or ticker_upper in known_etfs:
+            stock['stockanalysis_link'] = f"https://stockanalysis.com/etf/{ticker_upper.lower()}/"
+            stock['is_etf'] = True
+        else:
+            stock['stockanalysis_link'] = f"https://stockanalysis.com/stocks/{ticker_upper.lower()}/"
+            stock['is_etf'] = False
+
+    dataroma_count = sum(1 for s in stocks if 'Dataroma' in s.get('sources', []))
+    substack_count = sum(1 for s in stocks if 'Substack' in s.get('sources', []))
+    both_count = sum(1 for s in stocks if 'Dataroma' in s.get('sources', []) and 'Substack' in s.get('sources', []))
+
+    existing_data['last_updated'] = datetime.utcnow().isoformat() + 'Z'
+    existing_data['total_stocks'] = len(stocks)
+    existing_data['stats'] = {
+        'dataroma_stocks': dataroma_count,
+        'substack_stocks': substack_count,
+        'both_sources': both_count,
+        'dataroma_only': dataroma_count - both_count,
+        'substack_only': substack_count - both_count
+    }
+
+    return existing_data
+
+
 def main():
     """Main execution function."""
     # Parse command line arguments
@@ -180,6 +273,8 @@ def main():
                         help='Force full scrape of all investors (ignore incremental)')
     parser.add_argument('--no-alerts', action='store_true',
                         help='Skip alert evaluation and email sending')
+    parser.add_argument('--fundamentals-only', action='store_true',
+                        help='Skip Dataroma/Substack and only refresh fundamentals from existing data')
     args = parser.parse_args()
 
     logger.info("=" * 80)
@@ -204,6 +299,84 @@ def main():
         logger.info(f"Found {len(stale_tickers)} stale tickers (failed 3+ times)")
 
     try:
+        if args.fundamentals_only:
+            logger.info("\nRunning fundamentals-only refresh (skipping Dataroma/Substack)...")
+            previous_data = load_previous_data(config.data_dir)
+            if not previous_data.get('stocks'):
+                logger.error("No previous data found. Cannot run fundamentals-only refresh.")
+                return
+
+            existing_tickers = [s.get('ticker') for s in previous_data.get('stocks', []) if s.get('ticker')]
+            unique_tickers = deduplicate_tickers(existing_tickers)
+            logger.info(f"Refreshing fundamentals for {len(unique_tickers)} tickers")
+
+            fundamentals = {}
+            current_failed = set()
+            try:
+                fundamentals = fetch_fundamentals(unique_tickers)
+
+                for ticker, data in fundamentals.items():
+                    if 'error' in data:
+                        track_failed_ticker(failed_tickers_data, ticker)
+                        current_failed.add(ticker)
+                    elif ticker in failed_tickers_data.get('tickers', {}):
+                        del failed_tickers_data['tickers'][ticker]
+
+                if current_failed:
+                    logger.warning(f"Failed to fetch {len(current_failed)} tickers")
+
+                save_failed_tickers(failed_tickers_data)
+            except Exception as e:
+                logger.error(f"yfinance fetching failed: {e}")
+
+            failed_or_stale = current_failed.union(stale_tickers)
+            updated_data = update_existing_data_with_fundamentals(previous_data, fundamentals, failed_or_stale)
+
+            logger.info("\nSaving results...")
+            save_results(updated_data, config.data_dir)
+
+            # Copy to docs folder for GitHub Pages
+            docs_data_dir = config.docs_dir / 'data'
+            docs_data_dir.mkdir(parents=True, exist_ok=True)
+            import shutil
+            shutil.copy(config.data_dir / 'stocks.json', docs_data_dir / 'stocks.json')
+            logger.info(f"Copied stocks.json to {docs_data_dir}")
+
+            if ALERTS_AVAILABLE and not args.no_alerts:
+                logger.info("\n[6/6] Evaluating alerts...")
+                try:
+                    stocks = updated_data.get('stocks', [])
+                    alert_rules = sheets_config.get('alert_rules', [])
+                    settings = sheets_config.get('settings', {})
+
+                    all_alerts = evaluate_alerts(stocks, alert_rules, settings)
+                    total_alerts = sum(len(a) for a in all_alerts.values())
+                    if total_alerts > 0:
+                        logger.info(f"Generated {total_alerts} alerts")
+
+                        default_email = settings.get('default_email', os.getenv('ALERT_EMAIL'))
+                        if default_email:
+                            sent = send_alert_email(all_alerts, default_email)
+                            logger.info(f"Sent {sent} alert email(s)")
+                        else:
+                            logger.warning("No alert email configured (set ALERT_EMAIL or default_email in Sheets)")
+                    else:
+                        logger.info("No alerts triggered")
+
+                except Exception as e:
+                    logger.error(f"Alert evaluation failed: {e}")
+            else:
+                logger.info("\n[6/6] Alerts skipped (disabled or not available)")
+
+            logger.info("\n" + "=" * 80)
+            logger.info("SUCCESS! Fundamentals refresh completed")
+            logger.info(f"Output files:")
+            logger.info(f"  - {config.data_dir / 'stocks.json'}")
+            logger.info(f"  - {config.data_dir / 'stocks.csv'}")
+            logger.info(f"  - {config.data_dir / 'metadata.json'}")
+            logger.info(f"  - {docs_data_dir / 'stocks.json'}")
+            logger.info("=" * 80)
+            return
         # Step 1: Scrape Dataroma (dynamic discovery)
         logger.info("\n[1/6] Scraping Dataroma (dynamic investor discovery)...")
         dataroma_holdings = []

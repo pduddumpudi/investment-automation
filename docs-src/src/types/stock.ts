@@ -127,6 +127,7 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'sector', label: 'Sector', visible: false, group: 'basic' },
   { id: 'industry', label: 'Industry', visible: false, group: 'basic' },
   { id: 'current_price', label: 'Price', visible: false, group: 'valuation' },
+  { id: 'is_etf', label: 'ETF', visible: false, group: 'basic' },
   { id: 'thesis', label: 'Thesis', visible: false, group: 'basic' },
   { id: 'link', label: 'Link', visible: true, group: 'basic' },
 ];

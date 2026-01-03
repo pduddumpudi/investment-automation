@@ -31,7 +31,7 @@ INTERNATIONAL_FORMATS = {
 class YFinanceScraper:
     """Fetch comprehensive stock fundamentals from Yahoo Finance."""
 
-    def __init__(self, rate_limit_delay: float = 0.5):
+    def __init__(self, rate_limit_delay: float = 2.0):
         """
         Initialize the yfinance scraper.
 
@@ -104,6 +104,7 @@ class YFinanceScraper:
                         info = stock.info
                     else:
                         logger.warning(f"No data found for {ticker}")
+                        time.sleep(self.rate_limit_delay)
                         return None
 
                 # Core fields (always fetched)
@@ -239,7 +240,7 @@ class YFinanceScraper:
                 logger.warning(f"Attempt {attempt + 1} failed for {ticker}: {e}")
 
                 if attempt < max_retries - 1:
-                    wait_time = (2 ** attempt) * self.rate_limit_delay
+                    wait_time = max(self.rate_limit_delay + 1.0, 3.0)
                     logger.info(f"Retrying in {wait_time}s...")
                     time.sleep(wait_time)
                 else:
@@ -344,7 +345,7 @@ def fetch_fundamentals(tickers: List[str], extended: bool = False) -> Dict[str, 
     Returns:
         Dictionary mapping ticker to fundamentals
     """
-    scraper = YFinanceScraper(rate_limit_delay=0.5)
+    scraper = YFinanceScraper(rate_limit_delay=2.0)
     return scraper.get_fundamentals_batch(tickers, extended=extended)
 
 
@@ -358,5 +359,5 @@ def fetch_single_extended(ticker: str) -> Optional[Dict]:
     Returns:
         Dictionary with extended fundamentals or None
     """
-    scraper = YFinanceScraper(rate_limit_delay=0.1)
+    scraper = YFinanceScraper(rate_limit_delay=2.0)
     return scraper.get_extended_fundamentals(ticker)

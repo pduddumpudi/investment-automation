@@ -129,8 +129,9 @@ function SubstackMentions({ mentions }: { mentions: SubstackMention[] }) {
 export function ExpandedRow({ stock }: ExpandedRowProps) {
   const hasInvestors = stock.dataroma_data.investors.length > 0;
   const hasMentions = stock.substack_data.mentions.length > 0;
+  const hasThesis = Boolean(stock.thesis && stock.thesis.trim().length > 0);
 
-  if (!hasInvestors && !hasMentions) {
+  if (!hasInvestors && !hasMentions && !hasThesis) {
     return (
       <div className="p-4 text-sm text-gray-500 italic">
         No additional details available for this stock.
@@ -140,6 +141,19 @@ export function ExpandedRow({ stock }: ExpandedRowProps) {
 
   return (
     <div className="p-4 expanded-content">
+      {hasThesis && (
+        <div className="mb-4">
+          <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+            <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-7 7-7-7" />
+            </svg>
+            Thesis
+          </h4>
+          <div className="text-sm text-gray-700 bg-white border rounded p-3">
+            {stock.thesis}
+          </div>
+        </div>
+      )}
       {/* Combined view when stock has both sources */}
       {hasInvestors && hasMentions && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

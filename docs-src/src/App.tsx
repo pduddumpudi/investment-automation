@@ -1,18 +1,138 @@
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  useReactTable,
+  getCoreRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  getExpandedRowModel,
+  getFilteredRowModel,
+  type ColumnFiltersState,
+  type ExpandedState,
+  type SortingState,
+} from '@tanstack/react-table';
 import { useStockData } from './hooks/useStockData';
 import { useColumnPreferences } from './hooks/useColumnPreferences';
 import { DashboardStats } from './components/DashboardStats';
 import { StockTable } from './components/StockTable';
 import { ColumnPicker } from './components/ColumnPicker';
 import { FilterBar } from './components/FilterBar';
-import { useState } from 'react';
+import { getStockColumns } from './components/stockColumns';
+import type { StockData } from './types/stock';
 
 function App() {
   const { data, loading, error } = useStockData();
   const columnPrefs = useColumnPreferences();
   const [showColumnPicker, setShowColumnPicker] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState<'all' | 'dataroma' | 'substack' | 'both'>('all');
-  const [activityFilter, setActivityFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [tableData, setTableData] = useState<StockData | null>(null);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'pe_ratio', desc: false }]);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+
+  useEffect(() => {
+    if (data) {
+      setTableData(data);
+    }
+  }, [data]);
+
+  const handleThesisUpdate = useCallback((ticker: string, thesis: string) => {
+    setTableData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        stocks: prev.stocks.map(stock =>
+          stock.ticker === ticker ? { ...stock, thesis } : stock
+        ),
+      };
+    });
+  }, []);
+
+  const columns = useMemo(
+    () => getStockColumns({ onThesisUpdate: handleThesisUpdate }),
+    [handleThesisUpdate]
+  );
+
+  const stocks = tableData?.stocks ?? [];
+
+  const setFilterValue = useCallback((id: string, value: unknown) => {
+    setColumnFilters(prev => {
+      const next = prev.filter(filter => filter.id !== id);
+      const isEmptyArray = Array.isArray(value) && value.length === 0;
+      const isEmptyValue = value === '' || value === null || value === undefined || isEmptyArray;
+      if (!isEmptyValue) {
+        next.push({ id, value });
+      }
+      return next;
+    });
+  }, []);
+
+  const getFilterValue = useCallback(
+    (id: string) => columnFilters.find(filter => filter.id === id)?.value,
+    [columnFilters]
+  );
+
+  const sourceFilter = (getFilterValue('sources') as string[]) || [];
+  const activityFilter = (getFilterValue('activity') as string[]) || [];
+  const sectorFilter = (getFilterValue('sector') as string[]) || [];
+  const isEtfFilter = (getFilterValue('is_etf') as string) || '';
+  const peFilter = (getFilterValue('pe_ratio') as string) || '';
+  const aboveLowFilter = (getFilterValue('pct_above_52w_low') as string) || '';
+  const investorCountFilter = (getFilterValue('investors') as string) || '';
+
+  const sectorOptions = useMemo(() => {
+    if (!tableData) return [];
+    const options = new Set<string>();
+    tableData.stocks.forEach(stock => {
+      const sector = stock.fundamentals?.sector;
+      if (sector && sector !== 'N/A') {
+        options.add(sector);
+      }
+    });
+    return Array.from(options).sort();
+  }, [tableData]);
+
+  const columnVisibility = useMemo(() => {
+    const visibility: Record<string, boolean> = {};
+    columnPrefs.columns.forEach(column => {
+      visibility[column.id] = column.visible;
+    });
+    return visibility;
+  }, [columnPrefs.columns]);
+
+  const table = useReactTable({
+    data: stocks,
+    columns,
+    state: {
+      sorting,
+      expanded,
+      globalFilter,
+      columnFilters,
+      columnVisibility,
+    },
+    onSortingChange: setSorting,
+    onExpandedChange: setExpanded,
+    onGlobalFilterChange: setGlobalFilter,
+    onColumnFiltersChange: setColumnFilters,
+    globalFilterFn: (row, _columnId, filterValue) => {
+      const query = String(filterValue || '').toLowerCase().trim();
+      if (!query) return true;
+      const { ticker, company_name, dataroma_data } = row.original;
+      if (ticker.toLowerCase().includes(query)) return true;
+      if (company_name.toLowerCase().includes(query)) return true;
+      return dataroma_data.investors.some(inv => inv.name.toLowerCase().includes(query));
+    },
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
+    getRowCanExpand: () => true,
+    initialState: {
+      pagination: {
+        pageSize: 50,
+      },
+    },
+  });
 
   if (loading) {
     return (
@@ -40,33 +160,10 @@ function App() {
     );
   }
 
-  if (!data) {
+  if (!tableData) {
     return null;
   }
-
-  // Filter stocks based on current filters
-  const filteredStocks = data.stocks.filter(stock => {
-    // Source filter
-    if (sourceFilter === 'dataroma' && !stock.sources.includes('Dataroma')) return false;
-    if (sourceFilter === 'substack' && !stock.sources.includes('Substack')) return false;
-    if (sourceFilter === 'both' && !(stock.sources.includes('Dataroma') && stock.sources.includes('Substack'))) return false;
-
-    // Activity filter
-    if (activityFilter !== 'all' && stock.aggregate_activity.toLowerCase() !== activityFilter.toLowerCase()) return false;
-
-    // Search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      const matchesTicker = stock.ticker.toLowerCase().includes(query);
-      const matchesCompany = stock.company_name.toLowerCase().includes(query);
-      const matchesInvestor = stock.dataroma_data.investors.some(inv =>
-        inv.name.toLowerCase().includes(query)
-      );
-      if (!matchesTicker && !matchesCompany && !matchesInvestor) return false;
-    }
-
-    return true;
-  });
+  const resultCount = table.getFilteredRowModel().rows.length;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -82,7 +179,7 @@ function App() {
                 Investment Ideas Dashboard
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                Last Updated: {new Date(data.last_updated).toLocaleString()}
+                Last Updated: {new Date(tableData.last_updated).toLocaleString()}
               </p>
             </div>
             <button
@@ -113,26 +210,38 @@ function App() {
       {/* Main Content */}
       <main className="max-w-full mx-auto px-4 py-6">
         {/* Stats */}
-        <DashboardStats stats={data.stats} total={data.total_stocks} />
+        <DashboardStats stats={tableData.stats} total={tableData.total_stocks} />
 
         {/* Filters */}
         <FilterBar
+          globalFilter={globalFilter}
+          setGlobalFilter={setGlobalFilter}
           sourceFilter={sourceFilter}
-          setSourceFilter={setSourceFilter}
+          setSourceFilter={(values) => setFilterValue('sources', values)}
           activityFilter={activityFilter}
-          setActivityFilter={setActivityFilter}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          resultCount={filteredStocks.length}
-          totalCount={data.total_stocks}
+          setActivityFilter={(values) => setFilterValue('activity', values)}
+          sectorFilter={sectorFilter}
+          setSectorFilter={(values) => setFilterValue('sector', values)}
+          isEtfFilter={isEtfFilter}
+          setIsEtfFilter={(value) => setFilterValue('is_etf', value)}
+          peFilter={peFilter}
+          setPeFilter={(value) => setFilterValue('pe_ratio', value)}
+          aboveLowFilter={aboveLowFilter}
+          setAboveLowFilter={(value) => setFilterValue('pct_above_52w_low', value)}
+          investorCountFilter={investorCountFilter}
+          setInvestorCountFilter={(value) => setFilterValue('investors', value)}
+          resultCount={resultCount}
+          totalCount={tableData.total_stocks}
+          sectorOptions={sectorOptions}
+          onClearFilters={() => {
+            setGlobalFilter('');
+            setColumnFilters([]);
+          }}
         />
 
         {/* Table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <StockTable
-            stocks={filteredStocks}
-            visibleColumns={columnPrefs.visibleColumns}
-          />
+          <StockTable table={table} />
         </div>
       </main>
 
