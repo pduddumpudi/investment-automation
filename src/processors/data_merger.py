@@ -2,7 +2,7 @@
 Merge data from Dataroma, Substack, and yfinance into a unified format
 with per-investor details and structured activity data.
 """
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 from datetime import datetime
 try:
     from src.utils.logger import setup_logger
@@ -128,12 +128,13 @@ class DataMerger:
                 if not any(m['article_url'] == mention_entry['article_url'] for m in existing_mentions):
                     existing_mentions.append(mention_entry)
 
-    def add_fundamentals(self, fundamentals: Dict[str, Dict]) -> None:
+    def add_fundamentals(self, fundamentals: Dict[str, Dict], failed_tickers: Optional[set] = None) -> None:
         """
         Add fundamental data from yfinance.
 
         Args:
             fundamentals: Dictionary mapping ticker to fundamentals
+            failed_tickers: Optional set of tickers that failed to fetch
         """
         logger.info(f"Adding fundamentals for {len(fundamentals)} tickers")
 
@@ -144,7 +145,10 @@ class DataMerger:
                 logger.warning(f"Ticker {ticker} found in fundamentals but not in sources")
                 continue
 
-            # Build fundamentals object
+            # Check if this was a failed fetch
+            is_stale = ticker in (failed_tickers or set()) or 'error' in data
+
+            # Build fundamentals object with new fields
             fundamentals_obj = {
                 'pe_ratio': data.get('pe_ratio'),
                 'forward_pe': data.get('forward_pe'),
@@ -152,8 +156,14 @@ class DataMerger:
                 'peg_ratio': data.get('peg_ratio'),
                 'week_52_high': data.get('week_52_high'),
                 'week_52_low': data.get('week_52_low'),
+                'pct_above_52w_low': data.get('pct_above_52w_low'),
+                'pct_below_52w_high': data.get('pct_below_52w_high'),
                 'current_price': data.get('current_price'),
                 'previous_close': data.get('previous_close'),
+                'total_cash': data.get('total_cash'),
+                'total_debt': data.get('total_debt'),
+                'long_term_debt': data.get('long_term_debt'),
+                'net_debt': data.get('net_debt'),
                 'market_cap': data.get('market_cap'),
                 'insider_pct': data.get('insider_pct'),
                 'institutional_pct': data.get('institutional_pct'),
@@ -168,6 +178,8 @@ class DataMerger:
             # Update stock entry
             self.stocks[ticker]['company_name'] = data.get('company_name', self.stocks[ticker].get('company_name', ticker))
             self.stocks[ticker]['fundamentals'] = fundamentals_obj
+            self.stocks[ticker]['fundamentals_updated_at'] = datetime.utcnow().isoformat() + 'Z'
+            self.stocks[ticker]['is_stale'] = is_stale
 
             # Determine if ETF
             quote_type = data.get('quote_type', 'EQUITY')
@@ -230,6 +242,8 @@ class DataMerger:
                 'dataroma_data': stock['dataroma_data'],
                 'substack_data': stock['substack_data'],
                 'fundamentals': stock.get('fundamentals', {}),
+                'fundamentals_updated_at': stock.get('fundamentals_updated_at'),
+                'is_stale': stock.get('is_stale', False),
                 'stockanalysis_link': stock.get('stockanalysis_link', f"https://stockanalysis.com/stocks/{ticker.lower()}/"),
                 'is_etf': stock.get('is_etf', False),
                 'thesis': None  # Populated on-demand via Perplexity
@@ -244,7 +258,7 @@ class DataMerger:
             mentions = stock['substack_data'].get('mentions', [])
             stock_entry['mention_count'] = len(mentions)
 
-            # Replace None values with 'N/A' in fundamentals
+            # Replace None values with 'N/A' in fundamentals (except for specific numeric fields)
             if stock_entry['fundamentals']:
                 for key, value in stock_entry['fundamentals'].items():
                     if value is None:

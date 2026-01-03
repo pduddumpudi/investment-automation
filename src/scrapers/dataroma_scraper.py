@@ -143,6 +143,7 @@ class DataromaScraper:
     def discover_investors(self) -> List[Dict]:
         """
         Discover all investors from Dataroma homepage dynamically.
+        Uses multiple parsing strategies to ensure we capture all investors.
 
         Returns:
             List of investor dicts with name, fund_id, last_updated
@@ -155,9 +156,9 @@ class DataromaScraper:
 
             soup = BeautifulSoup(response.content, 'html.parser')
             investors = []
+            seen_fund_ids = set()
 
-            # Find all portfolio update links
-            # Format: <a href="/m/holdings.php?m=SEQUX">Ruane Cunniff - Sequoia Fund Updated 26 Nov 2025</a>
+            # Strategy 1: Find all links to holdings.php with 'm=' parameter
             for link in soup.find_all('a', href=True):
                 href = link.get('href', '')
 
@@ -165,63 +166,66 @@ class DataromaScraper:
                     # Extract fund ID from URL
                     fund_id = href.split('m=')[-1].split('&')[0].strip()
 
-                    if not fund_id:
+                    if not fund_id or fund_id in seen_fund_ids:
                         continue
 
                     # Parse the link text
                     text = link.get_text(strip=True)
 
-                    if not text or 'Updated' not in text:
+                    if not text:
                         continue
 
-                    # Extract investor name and last updated date
-                    # Format: "Investor Name - Fund Name Updated DD Mon YYYY"
-                    updated_match = re.search(r'(.+?)\s+Updated\s+(\d{1,2}\s+\w{3}\s+\d{4})', text)
+                    # Multiple date patterns to try
+                    last_updated_str = None
+                    full_name = text
 
+                    # Pattern 1: "Name Updated DD Mon YYYY"
+                    updated_match = re.search(r'(.+?)\s+Updated\s+(\d{1,2}\s+\w{3}\s+\d{4})', text)
                     if updated_match:
                         full_name = updated_match.group(1).strip()
                         date_str = updated_match.group(2).strip()
-
-                        # Parse investor name (before the dash if present)
-                        if ' - ' in full_name:
-                            investor_name = full_name.split(' - ')[0].strip()
-                        else:
-                            investor_name = full_name
-
-                        # Parse date
                         try:
                             last_updated = datetime.strptime(date_str, '%d %b %Y')
                             last_updated_str = last_updated.strftime('%Y-%m-%d')
                         except ValueError:
-                            last_updated_str = None
-                            logger.warning(f"Could not parse date: {date_str}")
+                            pass
 
-                        investor_info = {
-                            "name": investor_name,
-                            "full_name": full_name,
-                            "fund_id": fund_id,
-                            "last_updated": last_updated_str,
-                            "source_url": f"{self.BASE_URL}/holdings.php?m={fund_id}"
-                        }
+                    # Pattern 2: Just extract what we have without date requirement
+                    if not updated_match:
+                        # Remove common suffixes
+                        full_name = re.sub(r'\s*Updated.*$', '', text, flags=re.IGNORECASE).strip()
 
-                        # Avoid duplicates
-                        if not any(i["fund_id"] == fund_id for i in investors):
-                            investors.append(investor_info)
-                            logger.debug(f"Discovered: {investor_name} ({fund_id}) - Updated {last_updated_str}")
+                    # Extract investor name (before the dash if present)
+                    if ' - ' in full_name:
+                        investor_name = full_name.split(' - ')[0].strip()
                     else:
-                        # Try alternative pattern without date (just grab the investor)
-                        if ' - ' in text:
-                            investor_name = text.split(' - ')[0].strip()
-                            investor_info = {
-                                "name": investor_name,
-                                "full_name": text.replace('Updated', '').strip(),
-                                "fund_id": fund_id,
-                                "last_updated": None,
-                                "source_url": f"{self.BASE_URL}/holdings.php?m={fund_id}"
-                            }
-                            if not any(i["fund_id"] == fund_id for i in investors):
-                                investors.append(investor_info)
-                                logger.debug(f"Discovered (no date): {investor_name} ({fund_id})")
+                        investor_name = full_name
+
+                    # Skip if name is empty or too short
+                    if not investor_name or len(investor_name) < 2:
+                        continue
+
+                    investor_info = {
+                        "name": investor_name,
+                        "full_name": full_name,
+                        "fund_id": fund_id,
+                        "last_updated": last_updated_str,
+                        "source_url": f"{self.BASE_URL}/holdings.php?m={fund_id}"
+                    }
+
+                    investors.append(investor_info)
+                    seen_fund_ids.add(fund_id)
+                    logger.debug(f"Discovered: {investor_name} ({fund_id}) - Updated {last_updated_str or 'unknown'}")
+
+            # Strategy 2: Also check the managers page if we found fewer than expected
+            if len(investors) < 70:
+                logger.info(f"Found only {len(investors)} investors on homepage, checking managers page...")
+                additional = self._discover_from_managers_page(seen_fund_ids)
+                investors.extend(additional)
+
+            # Log warning if still low
+            if len(investors) < 75:
+                logger.warning(f"Only discovered {len(investors)} investors. Expected ~81. Check parsing logic.")
 
             logger.info(f"Discovered {len(investors)} investors from Dataroma")
             self.discovered_investors = investors
@@ -230,6 +234,63 @@ class DataromaScraper:
         except requests.RequestException as e:
             logger.error(f"Failed to discover investors: {e}")
             return []
+
+    def _discover_from_managers_page(self, seen_fund_ids: set) -> List[Dict]:
+        """
+        Discover additional investors from the managers page as fallback.
+
+        Args:
+            seen_fund_ids: Set of fund IDs already discovered
+
+        Returns:
+            List of additional investor dicts
+        """
+        logger.info(f"Checking managers page: {self.MANAGERS_URL}")
+        additional_investors = []
+
+        try:
+            response = self.session.get(self.MANAGERS_URL, timeout=30)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.content, 'html.parser')
+
+            for link in soup.find_all('a', href=True):
+                href = link.get('href', '')
+
+                if 'holdings.php' in href and 'm=' in href:
+                    fund_id = href.split('m=')[-1].split('&')[0].strip()
+
+                    if not fund_id or fund_id in seen_fund_ids:
+                        continue
+
+                    text = link.get_text(strip=True)
+                    if not text or len(text) < 2:
+                        continue
+
+                    # Extract name
+                    if ' - ' in text:
+                        investor_name = text.split(' - ')[0].strip()
+                    else:
+                        investor_name = text
+
+                    investor_info = {
+                        "name": investor_name,
+                        "full_name": text,
+                        "fund_id": fund_id,
+                        "last_updated": None,
+                        "source_url": f"{self.BASE_URL}/holdings.php?m={fund_id}"
+                    }
+
+                    additional_investors.append(investor_info)
+                    seen_fund_ids.add(fund_id)
+                    logger.debug(f"Discovered from managers: {investor_name} ({fund_id})")
+
+            logger.info(f"Found {len(additional_investors)} additional investors from managers page")
+
+        except requests.RequestException as e:
+            logger.warning(f"Failed to fetch managers page: {e}")
+
+        return additional_investors
 
     def should_scrape_investor(self, investor: Dict) -> bool:
         """

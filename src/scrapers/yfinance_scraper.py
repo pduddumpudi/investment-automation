@@ -107,6 +107,26 @@ class YFinanceScraper:
                         return None
 
                 # Core fields (always fetched)
+                current_price = info.get('currentPrice') or info.get('regularMarketPrice')
+                week_52_high = info.get('fiftyTwoWeekHigh')
+                week_52_low = info.get('fiftyTwoWeekLow')
+                total_cash = info.get('totalCash')
+                total_debt = info.get('totalDebt')
+                long_term_debt = info.get('longTermDebt')
+
+                # Calculate 52-week distance metrics
+                pct_above_52w_low = None
+                pct_below_52w_high = None
+                if current_price and week_52_low and week_52_low > 0:
+                    pct_above_52w_low = round(((current_price - week_52_low) / week_52_low) * 100, 2)
+                if current_price and week_52_high and week_52_high > 0:
+                    pct_below_52w_high = round(((week_52_high - current_price) / week_52_high) * 100, 2)
+
+                # Calculate net debt
+                net_debt = None
+                if total_debt is not None and total_cash is not None:
+                    net_debt = total_debt - total_cash
+
                 fundamentals = {
                     'ticker': ticker,
                     'company_name': info.get('longName') or info.get('shortName') or ticker,
@@ -114,13 +134,19 @@ class YFinanceScraper:
                     'forward_pe': info.get('forwardPE'),
                     'pb_ratio': info.get('priceToBook'),
                     'peg_ratio': info.get('pegRatio'),
-                    'week_52_high': info.get('fiftyTwoWeekHigh'),
-                    'week_52_low': info.get('fiftyTwoWeekLow'),
+                    'week_52_high': week_52_high,
+                    'week_52_low': week_52_low,
+                    'pct_above_52w_low': pct_above_52w_low,
+                    'pct_below_52w_high': pct_below_52w_high,
                     'insider_pct': info.get('heldPercentInsiders'),
                     'institutional_pct': info.get('heldPercentInstitutions'),
                     'market_cap': info.get('marketCap'),
-                    'current_price': info.get('currentPrice') or info.get('regularMarketPrice'),
+                    'current_price': current_price,
                     'previous_close': info.get('previousClose') or info.get('regularMarketPreviousClose'),
+                    'total_cash': total_cash,
+                    'total_debt': total_debt,
+                    'long_term_debt': long_term_debt,
+                    'net_debt': net_debt,
                     'sector': info.get('sector'),
                     'industry': info.get('industry'),
                     'country': info.get('country'),

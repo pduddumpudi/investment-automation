@@ -2,14 +2,22 @@ name: Daily Investment Data Update
 
 on:
   schedule:
-    # Normal days: 10 AM UTC
-    - cron: '0 10 * * *'
-    # 13F filing periods (Feb, May, Aug, Nov 1-20): Also run at 6 PM UTC
-    - cron: '0 18 1-20 2,5,8,11 *'
-  workflow_dispatch:  # Allow manual trigger
+    # Market open: 9:30 AM ET (Mon-Fri)
+    # Note: GitHub Actions uses UTC. ET = UTC-5 (winter) or UTC-4 (summer/DST)
+    # Using 14:30 UTC which is 9:30 AM ET in winter, 10:30 AM ET in summer
+    - cron: '30 14 * * 1-5'
+    # Midday: 1:30 PM ET (Mon-Fri)
+    - cron: '30 18 * * 1-5'
+    # 13F filing periods (Feb, May, Aug, Nov 1-20): Additional run at 6 PM ET
+    - cron: '0 23 1-20 2,5,8,11 1-5'
+  workflow_dispatch:  # Allow manual trigger from GitHub UI or Apps Script
     inputs:
       force_scrape:
         description: 'Force full scrape (ignore incremental)'
+        type: boolean
+        default: false
+      skip_alerts:
+        description: 'Skip alert evaluation'
         type: boolean
         default: false
 
@@ -17,6 +25,9 @@ permissions:
   contents: write
   pages: write
   issues: write
+
+env:
+  TZ: America/New_York
 
 jobs:
   scrape-and-update:
@@ -51,12 +62,22 @@ jobs:
       - name: Run scraper
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          SHEETS_URL: ${{ secrets.SHEETS_URL }}
+          SHEETS_SUBSTACK_GID: ${{ secrets.SHEETS_SUBSTACK_GID }}
+          SHEETS_ALERTS_GID: ${{ secrets.SHEETS_ALERTS_GID }}
+          SHEETS_SETTINGS_GID: ${{ secrets.SHEETS_SETTINGS_GID }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
         run: |
+          ARGS=""
           if [ "${{ github.event.inputs.force_scrape }}" == "true" ]; then
-            python src/main.py --force
-          else
-            python src/main.py
+            ARGS="$ARGS --force"
           fi
+          if [ "${{ github.event.inputs.skip_alerts }}" == "true" ]; then
+            ARGS="$ARGS --no-alerts"
+          fi
+          python src/main.py $ARGS
         continue-on-error: true
 
       - name: Copy data to docs folder

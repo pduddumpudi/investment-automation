@@ -42,8 +42,14 @@ export interface Fundamentals {
   peg_ratio: number | string;
   week_52_high: number | string;
   week_52_low: number | string;
+  pct_above_52w_low: number | string;
+  pct_below_52w_high: number | string;
   current_price: number | string;
   previous_close: number | string;
+  total_cash: number | string;
+  total_debt: number | string;
+  long_term_debt: number | string;
+  net_debt: number | string;
   market_cap: number | string;
   insider_pct: number | string;
   institutional_pct: number | string;
@@ -102,7 +108,10 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'company_name', label: 'Company', visible: true, group: 'basic' },
   { id: 'pe_ratio', label: 'PE Ratio', visible: true, group: 'valuation' },
   { id: 'pb_ratio', label: 'PB Ratio', visible: true, group: 'valuation' },
-  { id: 'week_52_range', label: '52W Range', visible: true, group: 'valuation' },
+  { id: 'week_52_low', label: '52W Low', visible: true, group: 'valuation' },
+  { id: 'week_52_high', label: '52W High', visible: true, group: 'valuation' },
+  { id: 'pct_above_52w_low', label: '% Above Low', visible: true, group: 'valuation' },
+  { id: 'pct_below_52w_high', label: '% Below High', visible: true, group: 'valuation' },
   { id: 'sources', label: 'Sources', visible: true, group: 'basic' },
   { id: 'investors', label: 'Investors', visible: true, group: 'basic' },
   { id: 'activity', label: 'Activity', visible: true, group: 'basic' },
@@ -110,6 +119,9 @@ export const DEFAULT_COLUMNS: ColumnConfig[] = [
   { id: 'market_cap', label: 'Market Cap', visible: false, group: 'valuation' },
   { id: 'peg_ratio', label: 'PEG', visible: false, group: 'valuation' },
   { id: 'forward_pe', label: 'Fwd PE', visible: false, group: 'valuation' },
+  { id: 'total_cash', label: 'Cash', visible: false, group: 'valuation' },
+  { id: 'total_debt', label: 'Total Debt', visible: false, group: 'valuation' },
+  { id: 'net_debt', label: 'Net Debt', visible: false, group: 'valuation' },
   { id: 'insider_pct', label: 'Insider %', visible: false, group: 'other' },
   { id: 'institutional_pct', label: 'Inst %', visible: false, group: 'other' },
   { id: 'sector', label: 'Sector', visible: false, group: 'basic' },
